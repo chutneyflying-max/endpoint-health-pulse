@@ -1,0 +1,12 @@
+{
+  "name": "endpoint-health-pulse",
+  "version": "1.0.0",
+  "description": "Periodic HTTP and DNS health pulse monitoring agent for public web endpoints",
+  "type": "module",
+  "scripts": {
+    "start": "node src/evaluator.js"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}
