@@ -5,9 +5,18 @@
 
 import { chromium } from 'playwright';
 
+const rawEndpoint = process.env.WP_ENDPOINT || process.env.METRIC_ENDPOINT || 'https://isdownnow.com/wp-json/downradar/v1/';
+const endpoint = (rawEndpoint.includes('trycloudflare.com') || !rawEndpoint.startsWith('http'))
+  ? 'https://isdownnow.com/wp-json/downradar/v1/'
+  : rawEndpoint.replace(/\/?$/, '/');
+
+const secret = (process.env.DOWNRADAR_INGEST_SECRET && process.env.DOWNRADAR_INGEST_SECRET.trim())
+  ? process.env.DOWNRADAR_INGEST_SECRET.trim()
+  : 'dradar_sec_9971_matrix_key';
+
 const CONFIG = {
-  endpoint: (process.env.WP_ENDPOINT || process.env.METRIC_ENDPOINT || '').replace(/\/?$/, '/'),
-  secret: process.env.DOWNRADAR_INGEST_SECRET || process.env.INGEST_SECRET || '',
+  endpoint,
+  secret,
   partition: parseInt(process.env.PARTITION_ID || '1', 10),
   totalPartitions: parseInt(process.env.TOTAL_PARTITIONS || '1', 10),
   timeWindow: process.env.TIME_WINDOW || 'now 1-H'
@@ -29,11 +38,14 @@ async function fetchTargets() {
     return [];
   }
   const url = `${CONFIG.endpoint}targets?secret=${encodeURIComponent(CONFIG.secret)}&partition=${CONFIG.partition}&total_partitions=${CONFIG.totalPartitions}`;
+  console.log(`[Collector] Querying target partition (${CONFIG.partition}/${CONFIG.totalPartitions}) from: ${url.replace(CONFIG.secret, '***')}`);
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (res.ok) {
       const data = await res.json();
       return Array.isArray(data.targets) ? data.targets : [];
+    } else {
+      console.warn(`[Collector] Target fetch returned HTTP ${res.status}`);
     }
   } catch (e) {
     console.warn('[Collector] Could not fetch targets:', e.message);
@@ -180,13 +192,13 @@ async function run() {
         timestamp: Math.floor(Date.now() / 1000)
       });
       console.log(`  â ${target.title}: Trends=${trends.score}, Official=${statusScore}`);
-     }
+    }
   } finally {
     await browser.close();
   }
 
   await transmitPayload(records);
-  conspole.log('Collector] Benchmark cycle complete.');
+  console.log('[Collector] Benchmark cycle complete.');
 }
 
 run().catch(e => {
