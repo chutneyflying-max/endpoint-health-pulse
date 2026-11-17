@@ -2,8 +2,11 @@ name: Endpoint Health Pulse
 
 on:
   schedule:
-    # Staggered offset schedule
-    - cron: '1,16,31,46 * * * *'
+    # Staggered offset schedule (independent cron registrations to prevent single-line queue drops)
+    - cron: '1 * * * *'
+    - cron: '16 * * * *'
+    - cron: '31 * * * *'
+    - cron: '46 * * * *'
   workflow_dispatch:
 
 concurrency:
