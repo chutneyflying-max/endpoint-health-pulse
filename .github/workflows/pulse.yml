@@ -17,10 +17,6 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        partition: [1, 2, 3, 4]
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -40,11 +36,12 @@ jobs:
             npx playwright install chromium
           fi
 
-      - name: Run Availability Audit for Shard ${{ matrix.partition }}
+      - name: Run Availability Audit for Partition 1
         env:
           WP_ENDPOINT: ${{ secrets.WP_ENDPOINT }}
-          DOWNRADAR_INGEST_SECRET: ${{ secrets.DOWNRADAR_INGEST_SECRET }}
-          PARTITION_ID: ${{ matrix.partition }}
+          INGEST_KEY: ${{ secrets.INGEST_KEY || secrets.DOWNRADAR_INGEST_SECRET }}
+          DOWNRADAR_INGEST_SECRET: ${{ secrets.INGEST_KEY || secrets.DOWNRADAR_INGEST_SECRET }}
+          PARTITION_ID: 1
           TOTAL_PARTITIONS: 4
           TIME_WINDOW: 'now 1-H'
           CHROME_PATH: '/usr/bin/google-chrome'
